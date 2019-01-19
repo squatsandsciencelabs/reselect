@@ -2,13 +2,13 @@ function defaultEqualityCheck(a, b) {
   return a === b
 }
 
-function areArgumentsShallowlyEqual(equalityCheck, prev, next) {
+function areArgumentsShallowlyEqual(equalityCheck, prev, next, passState) {
   if (prev === null || next === null || prev.length !== next.length) {
     return false
   }
 
   // Do this in a for loop (and not a `forEach` or an `every`) so we can determine equality as fast as possible.
-  const length = prev.length
+  const length = passState ? prev.length - 1 : prev.length
   for (let i = 0; i < length; i++) {
     if (!equalityCheck(prev[i], next[i])) {
       return false
@@ -18,14 +18,21 @@ function areArgumentsShallowlyEqual(equalityCheck, prev, next) {
   return true
 }
 
-export function defaultMemoize(func, equalityCheck = defaultEqualityCheck) {
+export function defaultMemoize(func, equalityCheck = defaultEqualityCheck, passState = false) {
   let lastArgs = null
   let lastResult = null
   // we reference arguments instead of spreading them for performance reasons
   return function () {
-    if (!areArgumentsShallowlyEqual(equalityCheck, lastArgs, arguments)) {
+    if (!areArgumentsShallowlyEqual(equalityCheck, lastArgs, arguments, passState)) {
       // apply arguments instead of spreading for performance.
-      lastResult = func.apply(null, arguments)
+      if (!passState) {
+        lastResult = func.apply(null, arguments)
+      } else {
+        const state = arguments[arguments.length-1]
+        arguments.length -= 1
+        arguments.apply(arguments, ...state)
+        lastResult = func.apply(null, arguments)
+      }
     }
 
     lastArgs = arguments
@@ -75,7 +82,9 @@ export function createSelectorCreator(memoize, ...memoizeOptions) {
       }
 
       // add state / props so the result function can access them
-      params.push.apply(params, arguments)
+      if (memoize === defaultMemoize && memoizeOptions.length >= 2 && memoizeOptions[1] === true) {
+        params.push(arguments)
+      }
 
       // apply arguments instead of spreading for performance.
       return memoizedResultFunc.apply(null, params)
@@ -90,6 +99,8 @@ export function createSelectorCreator(memoize, ...memoizeOptions) {
 }
 
 export const createSelector = createSelectorCreator(defaultMemoize)
+
+export const createStateSelector = createSelectorCreator(defaultMemoize, defaultEqualityCheck, true)
 
 export function createStructuredSelector(selectors, selectorCreator = createSelector) {
   if (typeof selectors !== 'object') {
