@@ -30,7 +30,7 @@ export function defaultMemoize(func, equalityCheck = defaultEqualityCheck, passS
       } else {
         const state = arguments[arguments.length-1]
         arguments.length -= 1
-        Array.prototype.apply(arguments, ...state)
+        arguments.push(...state)
         lastResult = func.apply(null, arguments)
       }
     }
