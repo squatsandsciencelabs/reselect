@@ -29,9 +29,9 @@ export function defaultMemoize(func, equalityCheck = defaultEqualityCheck, passS
         lastResult = func.apply(null, arguments)
       } else {
         const state = arguments[arguments.length-1]
-        arguments.length -= 1
-        arguments.push(...state)
-        lastResult = func.apply(null, arguments)
+        var args = Array.prototype.slice.call(arguments, 0, arguments.length-1);
+        args.push(...state)
+        lastResult = func.apply(null, args)
       }
     }
 
