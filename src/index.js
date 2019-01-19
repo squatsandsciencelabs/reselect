@@ -75,7 +75,7 @@ export function createSelectorCreator(memoize, ...memoizeOptions) {
       }
 
       // add state / props so the result function can access them
-      params.push(arguments)
+      params.push.apply(params, arguments)
 
       // apply arguments instead of spreading for performance.
       return memoizedResultFunc.apply(null, params)
